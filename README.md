@@ -1,4 +1,5 @@
-# Master Thesis in Computational Social Science (Tutor: Francisco Villamil Fernández)
+# Master Thesis in Computational Social Science
+## (Tutor: Francisco Villamil Fernández)
 **Mass Media Coverage of International Conflicts: Differencies by Countries and Ideologies.**
 
 While this piece of research is certainly not the first one that has been undertaken as an attempt to rigorously analyse mass media coverage of international conflicts, there is a reason to believe that a high degree of novelty is brought in.
