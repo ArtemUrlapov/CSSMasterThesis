@@ -1,5 +1,6 @@
 # Master Thesis in Computational Social Science
-## (Tutor: Francisco Villamil Fernández)
+## Author: Artem Urlapov
+## Tutor: Francisco Villamil Fernández
 ### Universidad Carlos III de Madrid
 
 
