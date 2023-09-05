@@ -506,76 +506,153 @@ head(TheGuardianDynamicDataFrame)
 
 ```
 
+```{r}
+
+library(openxlsx)
+
+write.xlsx(TheGuardianDynamicDataFrame, "TheGuardianUkraine60Days.xlsx")
+
+```
+
 
 2.2. - The New York Times
 
 ```{r}
 
-NYT <- "http://web.archive.org/web/20220418084529/https://www.nytimes.com/international/"
-NYTWebsite <- read_html(NYT)
+StartDate <- as.Date("2022-02-24")
 
+DailyHeadline <- function(domain, date) {
+  
+  Sys.sleep(sample(seq(22.5, 35, by = 0.1), 1))
+  
+  RandomPauseCap <- sample(seq(25, 55, by = 0.1), 1)
+  
+  WebArchiveURL <- "http://web.archive.org/cdx/search/cdx?url="
+
+  OutputURL <- RETRY("GET", WebArchiveURL, timeout(sample(seq(60, 120, by = 0.1), 1)),
+                query = list(url = domain, timestamp = format(date, "%Y%m%d"),
+                             output = "json"), times = 90, pause_cap = RandomPauseCap)
+
+  OutputList <- fromJSON(content(OutputURL, "text", encoding = "UTF-8"))
+  
+  Headlines <- as.data.frame(OutputList[-1, ], stringsAsFactors = FALSE)
+  
+  colnames(Headlines) <- OutputList[1, ]
+  
+  DesiredDate <- format(date, "%Y%m%d")
+  
+  FilteredHeadlines <- Headlines[grepl(DesiredDate, Headlines$timestamp, fixed = TRUE), ]
+
+  RandomHeadline <- FilteredHeadlines[sample(1:nrow(FilteredHeadlines), 1), ]
+
+  Timestamp <- RandomHeadline$timestamp
+  
+  OriginalURL <- RandomHeadline$urlkey
+  
+  RegularTheNewYorkTimesURL <- gsub("com,nytimes)/", "nytimes.com/",
+                                    OriginalURL, fixed = TRUE)
+  
+  RetrievedTheNewYorkTimesURL <- paste0("https://web.archive.org/web/", Timestamp, "/", RegularTheNewYorkTimesURL)
+  
+    cat("Retrieved from The New York Times:", RetrievedTheNewYorkTimesURL, "\n")
+
+
+  return(RetrievedTheNewYorkTimesURL)
+}
 
 EnglishVectorOfWords <- c("war", "invasion", "conflict", "offensive",
                           "occupation", "aggression", "battle", "assault",
-                          "campaign", "attack", "Putin", "Ukraine", "Zelenskiy",
-                          "Russia", "Biden", "Blinken", "Leyen", "Borrell", "Xi", "NATO")
+                          "campaign", "attack", "peace", "sanction", "Putin",
+                          "Ukraine", "Zelenskiy", "Zelensky", "Zelenskyy", "Russia",
+                          "Biden", "Blinken", "Leyen", "Borrell", "Xi", "NATO")
 
 
-NYTHeadlinesExtraction <- function(tag) {
-  NYTWebsite %>% html_nodes(xpath = paste0("//", tag)) %>%
-    html_text(trim = TRUE)
-}
+TheNewYorkTimesDynamicDataFrame <- data.frame(TheNewYorkTimesDate = character(0),
+                                              TheNewYorkTimesHeadline = character(0),
+                                              TheNewYorkTimesWeighting = numeric(0),
+                                              TheNewYorkTimesTag = character(0))
 
-
-NYTHeadlinesH1 <- NYTHeadlinesExtraction("h1")
-NYTHeadlinesH2 <- NYTHeadlinesExtraction("h2")
-NYTHeadlinesH3 <- NYTHeadlinesExtraction("h3")
-
-
-NYTHeadlinesCombined <- c(NYTHeadlinesH1, NYTHeadlinesH2, NYTHeadlinesH3)
-
-
-NYTSplitWords <- function(string) {  
+TheNewYorkTimesSplitWords <- function(string) {
   return(unlist(strsplit(gsub("(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ",
                               string, perl = TRUE), " ")))
 }
 
+for (i in 0:59) {
 
-NYTHeadlinesProcessed <- sapply(NYTHeadlinesCombined, NYTSplitWords, USE.NAMES = FALSE)
-NYTHeadlinesProcessed <- sapply(NYTHeadlinesProcessed, paste, collapse = " ")
+  Sys.sleep(sample(seq(35, 60, by = 0.1), 1)) 
+  
+  CurrentDate <- StartDate + days(i)
+  
+  TheNewYorkTimesTargetURL <- DailyHeadline("www.nytimes.com/international", CurrentDate)
 
-N <- length(NYTHeadlinesProcessed)
-NYTTagWeightings <- (N:1)/N
+  TheNewYorkTimesWebsite <- read_html(TheNewYorkTimesTargetURL)
 
+  TheNewYorkTimesMaxWeighting <- 0
+  
+  TheNewYorkTimesMaxWeightingRow <- NULL
 
-NYTMatchingConditions <- vapply(NYTHeadlinesProcessed, function(x) {
-    any(str_detect(x, regex(paste(EnglishVectorOfWords[1:12], collapse="|"),
-                            ignore_case = TRUE))) &&
-    any(str_detect(x, regex(paste(EnglishVectorOfWords[13:length(EnglishVectorOfWords)],
-                              collapse = "|"), ignore_case = TRUE)))
-}, logical(1))
-
-
-NYTTags <- c(rep("h1", length(NYTHeadlinesH1)),
-            rep("h2", length(NYTHeadlinesH2)),
-            rep("h3", length(NYTHeadlinesH3)))
+  for (TheNewYorkTimesTag in c("h1", "h2", "h3")) {
+    TheNewYorkTimesHeadlines <- TheNewYorkTimesWebsite %>%
+      html_nodes(TheNewYorkTimesTag) %>%
+      html_text(trim = TRUE)
 
 
-NYTStaticDataFrame <- data.frame(NYTHeadline = NA, 
-                                NYTWeighting = 0,
-                                NYTTag = NA)
+for (TheNewYorkTimesHeadline in TheNewYorkTimesHeadlines) {
+    SplitHeadline <- TheNewYorkTimesSplitWords(TheNewYorkTimesHeadline)
 
-if (any(NYTMatchingConditions)) {
-  NYTStaticDataFrame$NYTHeadline <- 
-    NYTHeadlinesProcessed[NYTMatchingConditions][1]
-  NYTStaticDataFrame$NYTWeighting <- 
-    NYTTagWeightings[NYTMatchingConditions][1]
-  NYTStaticDataFrame$NYTTag <- 
-    NYTTags[NYTMatchingConditions][1]
+    TheNewYorkTimesMatches1 <- sapply(SplitHeadline, function(word) any(str_detect(word, regex(paste(EnglishVectorOfWords[1:12], collapse = "|"), ignore_case = TRUE))))
+    TheNewYorkTimesMatches2 <- sapply(SplitHeadline, function(word) any(str_detect(word, regex(paste(EnglishVectorOfWords[13:length(EnglishVectorOfWords)],
+                                        collapse = "|"), ignore_case = TRUE))))
+
+    if (any(TheNewYorkTimesMatches1) && any(TheNewYorkTimesMatches2)) {
+        TheNewYorkTimesMatchIndex <- match(paste(SplitHeadline, collapse = " "),
+                                           TheNewYorkTimesHeadlines)
+        
+        if (is.na(TheNewYorkTimesMatchIndex)) {
+            next
+        }
+
+        TheNewYorkTimesRawWeighting <-
+          length(TheNewYorkTimesHeadlines) - TheNewYorkTimesMatchIndex + 1
+        TheNewYorkTimesNormalisedWeighting <- TheNewYorkTimesRawWeighting / length(TheNewYorkTimesHeadlines) 
+
+        if (TheNewYorkTimesNormalisedWeighting > TheNewYorkTimesMaxWeighting) {
+            TheNewYorkTimesMaxWeighting <- TheNewYorkTimesNormalisedWeighting
+            TheNewYorkTimesMaxWeightingRow <- data.frame(TheNewYorkTimesDate =
+                                                           as.character(CurrentDate), 
+                                                         TheNewYorkTimesHeadline =
+                                                           paste(SplitHeadline, collapse = " "),
+                                                         TheNewYorkTimesWeighting = 
+                                                           TheNewYorkTimesNormalisedWeighting, 
+                                                         TheNewYorkTimesTag =
+                                                           TheNewYorkTimesTag)
+              }
+        }
+    }
+
+}
+  
+  if (!is.null(TheNewYorkTimesMaxWeightingRow)) {
+    TheNewYorkTimesDynamicDataFrame <- rbind(TheNewYorkTimesDynamicDataFrame, TheNewYorkTimesMaxWeightingRow)
+  } else {
+        TheNewYorkTimesNARow <- data.frame(TheNewYorkTimesDate = as.character(CurrentDate),
+                                       TheNewYorkTimesHeadline = NA,
+                                       TheNewYorkTimesWeighting = 0,
+                                       TheNewYorkTimesTag = NA)
+    TheNewYorkTimesDynamicDataFrame <- rbind(TheNewYorkTimesDynamicDataFrame,
+                                             TheNewYorkTimesNARow)
+  }
 }
 
-print(NYTStaticDataFrame)
+head(TheNewYorkTimesDynamicDataFrame)
 
+```
+
+```{r}
+
+library(openxlsx)
+
+write.xlsx(TheNewYorkTimesDynamicDataFrame, "TheNewYorkTimesUkraine60Days.xlsx")
 
 ```
 
@@ -688,6 +765,14 @@ regex(paste(SpanishVectorOfWords[1:13], collapse = "|"), ignore_case = TRUE)))
 }
 
 head(ElPaisDynamicDataFrame)
+
+```
+
+```{r}
+
+library(openxlsx)
+
+write.xlsx(ElPaisDynamicDataFrame, "ElPaisUkraine60Days.xlsx")
 
 ```
 
@@ -804,6 +889,14 @@ for (i in 0:59) {
 }
 
 head(FolhaDeSaoPauloDynamicDataFrame)
+
+```
+
+```{r}
+
+library(openxlsx)
+
+write.xlsx(FolhaDeSaoPauloDynamicDataFrame, "FolhaDeSaoPauloUkraine60Days.xlsx")
 
 ```
 
@@ -931,6 +1024,14 @@ head(DailyMaverickDynamicDataFrame)
 
 ```
 
+```{r}
+
+library(openxlsx)
+
+write.xlsx(DailyMaverickDataFrame, "DailyMaverickUkraine60Days.xlsx")
+
+```
+
 
 2.6. - The Hindu
 
@@ -1052,6 +1153,14 @@ regex(paste(EnglishVectorOfWords[1:12], collapse = "|"), ignore_case = TRUE)))
 }
 
 head(TheHinduDynamicDataFrame)
+
+```
+
+```{r}
+
+library(openxlsx)
+
+write.xlsx(TheHinduDynamicDataFrame, "TheHinduUkraine60Days.xlsx")
 
 ```
 
