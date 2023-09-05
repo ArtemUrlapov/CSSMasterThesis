@@ -936,7 +936,7 @@ head(DailyMaverickDynamicDataFrame)
 
 ```{r}
 
-StartDate1 <- as.Date("2022-02-24")
+StartDate <- as.Date("2022-02-24")
 
 DailyTheHinduHeadline <- function(domain, date) {
   
@@ -952,28 +952,28 @@ DailyTheHinduHeadline <- function(domain, date) {
 
   OutputList <- fromJSON(content(OutputURL, "text", encoding = "UTF-8"))
   
-  TheHinduPartIHeadlines <- as.data.frame(OutputList[-1, ], stringsAsFactors = FALSE)
+  TheHinduHeadlines <- as.data.frame(OutputList[-1, ], stringsAsFactors = FALSE)
   
-  colnames(TheHinduPartIHeadlines) <- OutputList[1, ]
+  colnames(TheHinduHeadlines) <- OutputList[1, ]
   
   DesiredDate <- format(date, "%Y%m%d")
   
-  FilteredTheHinduPartIHeadlines <-
-  TheHinduPartIHeadlines[grepl(DesiredDate, TheHinduPartIHeadlines$timestamp,
+  FilteredTheHinduHeadlines <-
+  TheHinduHeadlines[grepl(DesiredDate, TheHinduHeadlines$timestamp,
                                   fixed = TRUE), ]
 
-  RandomTheHinduPartIHeadline <-
-    FilteredTheHinduPartIHeadlines[sample(1:nrow(FilteredTheHinduPartIHeadlines),
+  RandomTheHinduHeadline <-
+    FilteredTheHinduHeadlines[sample(1:nrow(FilteredTheHinduHeadlines),
                                                1), ]
 
-  Timestamp1 <- RandomTheHinduPartIHeadline$timestamp
+  Timestamp <- RandomTheHinduHeadline$timestamp
   
-  OriginalURL <- RandomTheHinduPartIHeadline$urlkey
+  OriginalURL <- RandomTheHinduHeadline$urlkey
   
   RegularTheHinduURL <- gsub("com,thehindu)/", "thehindu.com/",
                                 OriginalURL, fixed = TRUE) 
   
-  RetrievedTheHinduURL <- paste0("https://web.archive.org/web/", Timestamp1, "/",
+  RetrievedTheHinduURL <- paste0("https://web.archive.org/web/", Timestamp, "/",
                                     RegularTheHinduURL)
   
   cat("Retrieved from The Hindu:", RetrievedTheHinduURL, "\n")
@@ -988,23 +988,23 @@ EnglishVectorOfWords <- c("war", "invasion", "conflict", "offensive",
                           "Ukraine", "Zelenskiy", "Zelensky", "Zelenskyy", "Russia",
                           "Biden", "Blinken", "Leyen", "Borrell", "Xi", "NATO")
 
-TheHinduPartIDynamicDataFrame <- data.frame(TheHinduDate = character(0),
-                                          TheHinduHeadline = character(0),
-                                          TheHinduWeighting = numeric(0),
-                                          TheHinduTag = character(0))
+TheHinduDynamicDataFrame <- data.frame(TheHinduDate = character(0),
+                                       TheHinduHeadline = character(0),
+                                       TheHinduWeighting = numeric(0),
+                                       TheHinduTag = character(0))
 
 for (i in 0:59) {
 
   Sys.sleep(sample(seq(35, 60, by = 0.1), 1)) 
   
-  CurrentDate1 <- StartDate1 + days(i)
+  CurrentDate <- StartDate + days(i)
   TheHinduTargetURL <-
-    DailyTheHinduHeadline("www.thehindu.com/", CurrentDate1) 
+    DailyTheHinduHeadline("www.thehindu.com/", CurrentDate) 
 
   TheHinduWebsite <- read_html(TheHinduTargetURL)
 
-  TheHinduPartIMaxWeighting <- 0
-  TheHinduPartIMaxWeightingRow <- NULL
+  TheHinduMaxWeighting <- 0
+  TheHinduMaxWeightingRow <- NULL
 
   for (TheHinduTag in c("h1", "h2", "h3")) {
     TheHinduHeadlines <- TheHinduWebsite %>%
@@ -1018,42 +1018,40 @@ regex(paste(EnglishVectorOfWords[1:12], collapse = "|"), ignore_case = TRUE)))
                                         collapse = "|"), ignore_case = TRUE)))
       
       if (EnglishVectorOfWords1 && EnglishVectorOfWords2) {
-        TheHinduPartIRawWeighting <-
+        TheHinduRawWeighting <-
           length(TheHinduHeadlines) - match(TheHinduHeadline,
                                                  TheHinduHeadlines) + 1
-        TheHinduPartINormalisedWeighting <- TheHinduPartIRawWeighting / length(TheHinduHeadlines) 
+        TheHinduNormalisedWeighting <- TheHinduRawWeighting / length(TheHinduHeadlines) 
 
-        if (TheHinduPartINormalisedWeighting > TheHinduPartIMaxWeighting) {
-          TheHinduPartIMaxWeighting <- TheHinduPartINormalisedWeighting
-          TheHinduPartIMaxWeightingRow <- data.frame(TheHinduDate =
-                                                    as.character(CurrentDate1),
+        if (TheHinduNormalisedWeighting > TheHinduMaxWeighting) {
+          TheHinduMaxWeighting <- TheHinduNormalisedWeighting
+          TheHinduMaxWeightingRow <- data.frame(TheHinduDate =
+                                                    as.character(CurrentDate),
                                                    TheHinduHeadline =
                                                     TheHinduHeadline,
                                                    TheHinduWeighting = 
-                                                    TheHinduPartINormalisedWeighting, 
+                                                    TheHinduNormalisedWeighting, 
                                                    TheHinduTag = TheHinduTag)
         }
       }
     }
   }
 
-  if (!is.null(TheHinduPartIMaxWeightingRow)) {
-    TheHinduPartIDynamicDataFrame <- rbind(TheHinduPartIDynamicDataFrame,
-                                           TheHinduPartIMaxWeightingRow)
+  if (!is.null(TheHinduMaxWeightingRow)) {
+    TheHinduDynamicDataFrame <- rbind(TheHinduDynamicDataFrame,
+                                           TheHinduMaxWeightingRow)
   } else {
-    TheHinduPartINARow <-
-      data.frame(TheHinduDate = as.character(CurrentDate1),
+    TheHinduNARow <-
+      data.frame(TheHinduDate = as.character(CurrentDate),
                                    TheHinduHeadline = NA,
                                    TheHinduWeighting = NA,
                                    TheHinduTag = NA)
-    TheHinduPartIDynamicDataFrame <- rbind(TheHinduPartIDynamicDataFrame,
-                                         TheHinduPartINARow)
+    TheHinduDynamicDataFrame <- rbind(TheHinduDynamicDataFrame,
+                                         TheHinduNARow)
   }
 }
 
-head(TheHinduPartIDynamicDataFrame)
-
-tail(TheHinduPartIDynamicDataFrame)
+head(TheHinduDynamicDataFrame)
 
 ```
 
@@ -1324,6 +1322,8 @@ ggplot(head(TheNewYorkTimesCleanWordFrequency, 10), aes(x = reorder(lemma, n), y
 ```
 
 
+4.3. - El Pais
+
 ```{r}
 
 ElPaisModel <- udpipe_download_model(language = "spanish-gsd",
@@ -1536,7 +1536,6 @@ ggplot(head(DailyMaverickCleanWordFrequencyAnalysis, 10), aes(x = reorder(lemma,
   theme_minimal()
 
 ```
-
 
 
 4.6. - The Hindu
