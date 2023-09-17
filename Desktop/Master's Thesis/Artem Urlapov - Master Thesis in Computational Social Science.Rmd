@@ -385,6 +385,7 @@ library(httr)
 library(jsonlite)
 library(lubridate)
 library(dplyr)
+library(purrr)
 
 ```
 
@@ -424,10 +425,10 @@ DailyTheGuardianHeadline <- function(domain, date) {
 
   Timestamp <- RandomTheGuardianHeadline$timestamp
   
-  OriginalURL <- RandomTheGuardianHeadline$urlkey
+  TheGuardianOriginalURL <- RandomTheGuardianHeadline$urlkey
   
   RegularTheGuardianURL <- gsub("com,theguardian)/", "theguardian.com/",
-                                OriginalURL, fixed = TRUE) 
+                                TheGuardianOriginalURL, fixed = TRUE) 
   
   RetrievedTheGuardianURL <- paste0("https://web.archive.org/web/", Timestamp, "/",
                                     RegularTheGuardianURL)
@@ -547,10 +548,10 @@ DailyHeadline <- function(domain, date) {
 
   Timestamp <- RandomHeadline$timestamp
   
-  OriginalURL <- RandomHeadline$urlkey
+  TheNewYorkTimesOriginalURL <- RandomHeadline$urlkey
   
   RegularTheNewYorkTimesURL <- gsub("com,nytimes)/", "nytimes.com/",
-                                    OriginalURL, fixed = TRUE)
+                                    TheNewYorkTimesOriginalURL, fixed = TRUE)
   
   RetrievedTheNewYorkTimesURL <- paste0("https://web.archive.org/web/", Timestamp, "/", RegularTheNewYorkTimesURL)
   
@@ -691,9 +692,9 @@ DailyElPaisHeadline <- function(domain, date) {
 
   Timestamp <- RandomElPaisHeadline$timestamp
   
-  OriginalURL <- RandomElPaisHeadline$urlkey
+  ElPaisOriginalURL <- RandomElPaisHeadline$urlkey
   
-  RegularElPaisURL <- gsub("com,elpais)/", "elpais.com/", OriginalURL, fixed = TRUE)
+  RegularElPaisURL <- gsub("com,elpais)/", "elpais.com/", ElPaisOriginalURL, fixed = TRUE)
   
   RetrievedElPaisURL <- paste0("https://web.archive.org/web/", Timestamp, "/", RegularElPaisURL)
   
@@ -810,10 +811,10 @@ DailyFolhaDeSaoPauloHeadline <- function(domain, date) {
 
   Timestamp <- RandomFolhaDeSaoPauloHeadline$timestamp
   
-  OriginalURL <- RandomFolhaDeSaoPauloHeadline$urlkey
+  FolhaDeSaoPauloOriginalURL <- RandomFolhaDeSaoPauloHeadline$urlkey
   
   RegularFolhaDeSaoPauloURL <- gsub("br,com,uol,folha)/", "folha.uol.com.br/",
-                                        OriginalURL, fixed = TRUE)
+                                        FolhaDeSaoPauloOriginalURL, fixed = TRUE)
   
   RetrievedFolhaDeSaoPauloURL <- paste0("https://web.archive.org/web/", Timestamp,
                                             "/", RegularFolhaDeSaoPauloURL)
@@ -937,10 +938,10 @@ DailyMaverickHeadline <- function(domain, date) {
 
   Timestamp <- RandomDailyMaverickHeadline$timestamp
   
-  OriginalURL <- RandomDailyMaverickHeadline$urlkey
+  DailyMaverickOriginalURL <- RandomDailyMaverickHeadline$urlkey
   
   RegularDailyMaverickURL <- gsub("za,co,dailymaverick)/", "dailymaverick.co.za/",
-                                OriginalURL, fixed = TRUE) 
+                                DailyMaverickOriginalURL, fixed = TRUE) 
   
   RetrievedDailyMaverickURL <- paste0("https://web.archive.org/web/", Timestamp, "/",
                                     RegularDailyMaverickURL)
@@ -1013,7 +1014,7 @@ for (i in 0:59) {
     DailyMaverickNARow <-
       data.frame(DailyMaverickDate = as.character(CurrentDate),
                                    DailyMaverickHeadline = NA,
-                                   DailyMaverickWeighting = NA,
+                                   DailyMaverickWeighting = 0,
                                    DailyMaverickTag = NA)
     DailyMaverickDynamicDataFrame <- rbind(DailyMaverickDynamicDataFrame,
                                          DailyMaverickNARow)
@@ -1069,10 +1070,10 @@ DailyTheHinduHeadline <- function(domain, date) {
 
   Timestamp <- RandomTheHinduHeadline$timestamp
   
-  OriginalURL <- RandomTheHinduHeadline$urlkey
+  TheHinduOriginalURL <- RandomTheHinduHeadline$urlkey
   
   RegularTheHinduURL <- gsub("com,thehindu)/", "thehindu.com/",
-                                OriginalURL, fixed = TRUE) 
+                                TheHinduOriginalURL, fixed = TRUE) 
   
   RetrievedTheHinduURL <- paste0("https://web.archive.org/web/", Timestamp, "/",
                                     RegularTheHinduURL)
@@ -1145,7 +1146,7 @@ regex(paste(EnglishVectorOfWords[1:12], collapse = "|"), ignore_case = TRUE)))
     TheHinduNARow <-
       data.frame(TheHinduDate = as.character(CurrentDate),
                                    TheHinduHeadline = NA,
-                                   TheHinduWeighting = NA,
+                                   TheHinduWeighting = 0,
                                    TheHinduTag = NA)
     TheHinduDynamicDataFrame <- rbind(TheHinduDynamicDataFrame,
                                          TheHinduNARow)
@@ -1697,7 +1698,6 @@ ggplot(TheHinduCleanSentimentAnalysis, aes(x = reorder(sentiment, TheHinduWeight
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
-# Word Frequency Calculation
 TheHinduCleanWordFrequencyAnalysis <- TheHinduRelevantTokens %>%
   count(lemma) %>%
   mutate(TheHinduWeightedN = n * TheHinduWeightFactor) %>%
@@ -1713,6 +1713,5 @@ ggplot(head(TheHinduCleanWordFrequencyAnalysis, 10), aes(x = reorder(lemma,
        y = "Weighted Frequency") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
-
 
 ```
